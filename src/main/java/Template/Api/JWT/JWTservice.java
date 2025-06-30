@@ -13,7 +13,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,6 +29,7 @@ public class JWTservice {
     public String getToken(UserDetails user) {
         return getToken(new HashMap<>(), user);
     }
+
     public String getToken(UserDetails user,UserFrontendDTO userFrontendDTO) {
         try{
         Map<String, Object> claims = new HashMap<>();

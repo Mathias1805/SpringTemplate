@@ -19,4 +19,5 @@ public class LoginRequest {
     String token;
     String usuariofrontend;
     String contraseniafrontend;
+    Integer TipoUsuario;
 }

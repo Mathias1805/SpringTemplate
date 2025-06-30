@@ -45,8 +45,8 @@ public class SecurityConfig {
                         authRequest
                                 .requestMatchers("/error").permitAll()
                                 .requestMatchers("/Auth/Login").permitAll()
-                                .requestMatchers("/Auth/Register").permitAll()//.hasAuthority("ADMIN")
-                                //.anyRequest().authenticated()
+                                .requestMatchers("/Auth/Register").hasAuthority("ADMIN")
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManager ->
                         sessionManager

@@ -11,5 +11,12 @@ import lombok.*;
 public class RegisterRequest {
     String usuario;
     String contrasenia;
+    String email;
+    Integer telefono;
+    Integer dni;
+    String nombre;
+    String paterno;
+    String materno;
+    String direccion;
     String rol;
 }

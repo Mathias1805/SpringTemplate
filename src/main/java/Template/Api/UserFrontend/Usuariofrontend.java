@@ -42,6 +42,16 @@ public class Usuariofrontend {
 
     @Column(name = "materno", nullable = false, length = Integer.MAX_VALUE)
     private String materno;
+
+    @Column(name = "cod_ver", nullable = true,unique = false)
+    private String cod_ver;
+
+    @Column(name = "direccion", nullable = true,unique = false)
+    private String direccion;
+
+    @Column(name = "activo", nullable = false,unique = false)
+    private Integer activo;
+
     @JsonIgnore
     @OneToMany(mappedBy = "idusuariofrontend")
     private Set<Sesion> sesions = new LinkedHashSet<>();
