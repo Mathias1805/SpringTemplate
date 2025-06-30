@@ -4,9 +4,12 @@ import Template.Api.UserFrontend.Usuariofrontend;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import javax.swing.text.html.Option;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface UsuarioFrontendRepository extends JpaRepository<Usuariofrontend, Integer> {
     Optional<Usuariofrontend> findByUsuarioAndAndContrasenia(String Usuario,String Contrasenia);
+    Optional<Usuariofrontend> findByUsuarioAndCod_ver(String user);
 }

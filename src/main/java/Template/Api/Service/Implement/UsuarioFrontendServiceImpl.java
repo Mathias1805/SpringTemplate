@@ -3,6 +3,7 @@ package Template.Api.Service.Implement;
 import Template.Api.DTO.AuthResponse;
 import Template.Api.DTO.LoginRequest;
 import Template.Api.DTO.RegisterRequest;
+import Template.Api.DTO.UserCodeDTO;
 import Template.Api.JWT.JWTservice;
 import Template.Api.Repository.UsuarioFrontendRepository;
 import Template.Api.Service.EmailService;
@@ -10,24 +11,18 @@ import Template.Api.Service.UsuarioFrontendService;
 import Template.Api.Auth.AuthService;
 import Template.Api.UserFrontend.Usuariofrontend;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
 @Service
 @RequiredArgsConstructor
 public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
 
-    @Autowired
     EmailService emailService;
-    @Autowired
     UsuarioFrontendRepository usuarioFrontendRepository;
-    @Autowired
     AuthService authService;
-    @Autowired
     JWTservice jwTservice;
 
     @Override
@@ -75,7 +70,27 @@ public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
         response.put("status", "pending_verification");
         return response;
         }
+
+    @Override
+    public Map<String, Object> ValidateUser(UserCodeDTO userCode) {
+        Optional<Usuariofrontend> Usuario = usuarioFrontendRepository.findByUsuarioAndCod_ver(userCode.getUser());
+        if (Usuario.isEmpty()) {
+            throw new RuntimeException("Usuario no encontrado o Código de verificacion incorrecto");
+        }
+        if(Objects.equals(Usuario.get().getCod_ver(), userCode.getPassword())){
+            Usuario.get().setActivo(1);
+            Usuario.get().setCod_ver(generateRandomCode());
+            usuarioFrontendRepository.save(Usuario.get());
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Usuario Validado. Puede Iniciar Sesión");
+        response.put("status", "validated");
+
+        return response;
     }
+
+
+}
 
 
 
