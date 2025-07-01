@@ -10,6 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface UsuarioFrontendRepository extends JpaRepository<Usuariofrontend, Integer> {
-    Optional<Usuariofrontend> findByUsuarioAndAndContrasenia(String Usuario,String Contrasenia);
-    Optional<Usuariofrontend> findByUsuarioAndCod_ver(String user);
+    Optional<Usuariofrontend> findByUsuarioAndContrasenia(String Usuario,String Contrasenia);
+    Optional<Usuariofrontend> findByUsuarioAndCodver(String user,String cod_ver);
+
+    Optional<Usuariofrontend> findByUsuario(String usuario);
 }

@@ -19,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Service
@@ -29,28 +30,28 @@ public class JWTservice {
     public String getToken(UserDetails user) {
         return getToken(new HashMap<>(), user);
     }
-
     public String getToken(UserDetails user,UserFrontendDTO userFrontendDTO) {
         try{
         Map<String, Object> claims = new HashMap<>();
-        Usuariofrontend usuariofrontend = usuarioFrontendRepository
-                .findByUsuarioAndAndContrasenia(userFrontendDTO.getUsuario(),Cod(userFrontendDTO.getContrasenia()))
-                .orElseThrow();
-        claims.put("Id",usuariofrontend.getId());
-        claims.put("UserFrontend",usuariofrontend.getUsuario());
-        claims.put("Dni",usuariofrontend.getDni());
-        claims.put("Email",usuariofrontend.getEmail());
-        claims.put("Telefono",usuariofrontend.getTelefono());
-        claims.put("Nombre",usuariofrontend.getNombre());
-        claims.put("Paterno",usuariofrontend.getPaterno());
-        claims.put("Materno",usuariofrontend.getMaterno());
+        Optional<Usuariofrontend>usuariofrontend = usuarioFrontendRepository
+                .findByUsuario(userFrontendDTO.getUsuario());
+        if(usuariofrontend.isEmpty()){
+            throw new Exception("Error Inesperado");
+        }
+        claims.put("Id",usuariofrontend.get().getId());
+        claims.put("UserFrontend",usuariofrontend.get().getUsuario());
+        claims.put("Dni",usuariofrontend.get().getDni());
+        claims.put("Email",usuariofrontend.get().getEmail());
+        claims.put("Telefono",usuariofrontend.get().getTelefono());
+        claims.put("Nombre",usuariofrontend.get().getNombre());
+        claims.put("Paterno",usuariofrontend.get().getPaterno());
+        claims.put("Materno",usuariofrontend.get().getMaterno());
         return getToken(claims, user);
         }
         catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
             return null;
         }
-
     }
     public String getToken(Map<String, Object> extraClaims, UserDetails user) {
         return Jwts.builder()

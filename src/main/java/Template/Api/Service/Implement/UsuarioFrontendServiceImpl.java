@@ -11,6 +11,7 @@ import Template.Api.Service.UsuarioFrontendService;
 import Template.Api.Auth.AuthService;
 import Template.Api.UserFrontend.Usuariofrontend;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
@@ -19,10 +20,13 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
-
+    @Autowired
     EmailService emailService;
+    @Autowired
     UsuarioFrontendRepository usuarioFrontendRepository;
+    @Autowired
     AuthService authService;
+    @Autowired
     JWTservice jwTservice;
 
     @Override
@@ -52,7 +56,7 @@ public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
         newFrontendUser.setMaterno(registerRequest.getMaterno());
         newFrontendUser.setDireccion(registerRequest.getDireccion());
         String verificationCode = generateRandomCode();
-        newFrontendUser.setCod_ver(verificationCode);
+        newFrontendUser.setCodver(verificationCode);
         newFrontendUser.setActivo(0);
 
         Usuariofrontend newUserFrontendSaved = usuarioFrontendRepository.save(newFrontendUser);
@@ -73,13 +77,13 @@ public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
 
     @Override
     public Map<String, Object> ValidateUser(UserCodeDTO userCode) {
-        Optional<Usuariofrontend> Usuario = usuarioFrontendRepository.findByUsuarioAndCod_ver(userCode.getUser());
+        Optional<Usuariofrontend> Usuario = usuarioFrontendRepository.findByUsuarioAndCodver(userCode.getUser(), userCode.getCodver());
         if (Usuario.isEmpty()) {
             throw new RuntimeException("Usuario no encontrado o Código de verificacion incorrecto");
         }
-        if(Objects.equals(Usuario.get().getCod_ver(), userCode.getPassword())){
+        if(Objects.equals(Usuario.get().getCodver(), userCode.getCodver())){
             Usuario.get().setActivo(1);
-            Usuario.get().setCod_ver(generateRandomCode());
+            Usuario.get().setCodver(generateRandomCode());
             usuarioFrontendRepository.save(Usuario.get());
         }
         Map<String, Object> response = new HashMap<>();

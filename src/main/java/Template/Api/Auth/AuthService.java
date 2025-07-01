@@ -48,10 +48,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
 
-        return switch (request.getTipoUsuario()){
+        return switch (request.getTipousuario()){
             case 1 -> procesarLoginClient(request);
             case 2 -> procesarLoginFrontendUser(request);
-            default -> throw new IllegalStateException("Unexpected value: " + request.getTipoUsuario());
+            default -> throw new IllegalStateException("Unexpected value: " + request.getTipousuario());
         };
     }
 
@@ -77,13 +77,13 @@ public class AuthService {
             return AuthResponse.builder().token(token).build();
         }
         return AuthResponse.builder().token(token).sesiones(sesions).build();
-
     }
 
     private AuthResponse procesarLoginFrontendUser(LoginRequest request) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getContrasenia()));
         UserDetails user = usuarioBackendRepository.findUsuarioBackendByUsuario(request.getUsuario()).orElseThrow();
-        Optional<Usuariofrontend> usuarioFrontend = usuarioFrontendRepository.findByUsuarioAndAndContrasenia(request.getUsuario(),jwTservice.Cod(request.getContrasenia()));
+        Optional<Usuariofrontend> usuarioFrontend = usuarioFrontendRepository.findByUsuarioAndContrasenia(request.getUsuariofrontend(),jwTservice.Cod(request.getContraseniafrontend()));
+
         if(usuarioFrontend.isEmpty()){
             throw new InsufficientAuthenticationException("Usuario o Contraseña Incorrecta");
         }
@@ -91,12 +91,11 @@ public class AuthService {
             throw new RuntimeException("Usuario no activo");
         }
         UserFrontendDTO UserDto = new UserFrontendDTO();
-        UserDto.setUsuario(user.getUsername());
-        UserDto.setContrasenia(request.getContrasenia());
+        UserDto.setUsuario(usuarioFrontend.get().getUsuario());
+        UserDto.setContrasenia(usuarioFrontend.get().getContrasenia());
         String token = jwTservice.getToken(user,UserDto);
         return AuthResponse.builder().token(token).build();
     }
-
 
     public AuthResponse register(RegisterRequest request) {
         UsuarioBackend user = UsuarioBackend.builder()

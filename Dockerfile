@@ -5,3 +5,6 @@ ENTRYPOINT ["java","-jar","/app.jar"]
 ENV  DBURL=jdbc:postgresql://localhost:5432/template
 ENV DBUSER=guest
 ENV DBPASS=guest
+ENV EMUSER=SpringTemplateTest@gmail.com
+ENV EMPASS=kcfccdkcgybmarjm
+

@@ -10,6 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserCodeDTO {
-    private String password;
+    private String codver;
     private String user;
 }

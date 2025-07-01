@@ -15,5 +15,4 @@ import java.util.List;
 public class AuthResponse {
     String token;
     List<Sesion> sesiones;
-    UserFrontendDTO usuario;
 }
