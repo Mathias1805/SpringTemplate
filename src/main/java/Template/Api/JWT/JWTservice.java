@@ -1,7 +1,7 @@
 package Template.Api.JWT;
 
 
-import Template.Api.DTO.UserFrontendDTO;
+import Template.Api.DTO.DTO_UserFrontend;
 import Template.Api.Repository.UsuarioFrontendRepository;
 import Template.Api.UserFrontend.Usuariofrontend;
 import io.jsonwebtoken.Claims;
@@ -30,7 +30,7 @@ public class JWTservice {
     public String getToken(UserDetails user) {
         return getToken(new HashMap<>(), user);
     }
-    public String getToken(UserDetails user,UserFrontendDTO userFrontendDTO) {
+    public String getToken(UserDetails user, DTO_UserFrontend userFrontendDTO) {
         try{
         Map<String, Object> claims = new HashMap<>();
         Optional<Usuariofrontend>usuariofrontend = usuarioFrontendRepository

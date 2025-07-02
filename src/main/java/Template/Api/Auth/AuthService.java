@@ -1,10 +1,10 @@
 package Template.Api.Auth;
 
 
-import Template.Api.DTO.AuthResponse;
-import Template.Api.DTO.LoginRequest;
-import Template.Api.DTO.RegisterRequest;
-import Template.Api.DTO.UserFrontendDTO;
+import Template.Api.DTO.DTO_AuthResponse;
+import Template.Api.DTO.DTO_LoginRequest;
+import Template.Api.DTO.DTO_RegisterRequest;
+import Template.Api.DTO.DTO_UserFrontend;
 import Template.Api.JWT.JWTservice;
 import Template.Api.Repository.DispositivoRepository;
 import Template.Api.Repository.SesionRepository;
@@ -46,7 +46,7 @@ public class AuthService {
     @Autowired
     private final SesionRepository sesionRepository;
 
-    public AuthResponse login(LoginRequest request) {
+    public DTO_AuthResponse login(DTO_LoginRequest request) {
 
         return switch (request.getTipousuario()){
             case 1 -> procesarLoginClient(request);
@@ -55,7 +55,7 @@ public class AuthService {
         };
     }
 
-    private AuthResponse procesarLoginClient(LoginRequest request) {
+    private DTO_AuthResponse procesarLoginClient(DTO_LoginRequest request) {
 
         if(dispositivoRepository.findDispositivoByIpAndNombre(request.getIp(), request.getNombreDispositivo()).isEmpty()){
             Dispositivo dispositivo = new Dispositivo();
@@ -74,12 +74,12 @@ public class AuthService {
         String token = jwTservice.getToken(user);
 
         if (sesions.isEmpty()){
-            return AuthResponse.builder().token(token).build();
+            return DTO_AuthResponse.builder().token(token).build();
         }
-        return AuthResponse.builder().token(token).sesiones(sesions).build();
+        return DTO_AuthResponse.builder().token(token).sesiones(sesions).build();
     }
 
-    private AuthResponse procesarLoginFrontendUser(LoginRequest request) {
+    private DTO_AuthResponse procesarLoginFrontendUser(DTO_LoginRequest request) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getContrasenia()));
         UserDetails user = usuarioBackendRepository.findUsuarioBackendByUsuario(request.getUsuario()).orElseThrow();
         Optional<Usuariofrontend> usuarioFrontend = usuarioFrontendRepository.findByUsuarioAndContrasenia(request.getUsuariofrontend(),jwTservice.Cod(request.getContraseniafrontend()));
@@ -90,20 +90,20 @@ public class AuthService {
         if (usuarioFrontend.get().getActivo() == 0){
             throw new RuntimeException("Usuario no activo");
         }
-        UserFrontendDTO UserDto = new UserFrontendDTO();
+        DTO_UserFrontend UserDto = new DTO_UserFrontend();
         UserDto.setUsuario(usuarioFrontend.get().getUsuario());
         UserDto.setContrasenia(usuarioFrontend.get().getContrasenia());
         String token = jwTservice.getToken(user,UserDto);
-        return AuthResponse.builder().token(token).build();
+        return DTO_AuthResponse.builder().token(token).build();
     }
 
-    public AuthResponse register(RegisterRequest request) {
+    public DTO_AuthResponse register(DTO_RegisterRequest request) {
         UsuarioBackend user = UsuarioBackend.builder()
                 .usuario(request.getUsuario())
                 .contraseia(passwordEncoder.encode(request.getContrasenia()))
                 .rol(rolRepository.findByRolLike(request.getRol()).orElseThrow())
                 .build();
         usuarioBackendRepository.save(user);
-        return AuthResponse.builder().token(jwTservice.getToken(user)).build();
+        return DTO_AuthResponse.builder().token(jwTservice.getToken(user)).build();
     }
 }

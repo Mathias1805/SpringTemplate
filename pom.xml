@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>SpringTemplate</groupId>
-	<artifactId>SpringTemplate</artifactId>
+	<artifactId>SpringTemplate_Backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>SpringTemplate</name>
 	<description>Template for Spring projects</description>

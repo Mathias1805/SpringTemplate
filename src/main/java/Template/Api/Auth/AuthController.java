@@ -1,8 +1,8 @@
 package Template.Api.Auth;
 
-import Template.Api.DTO.AuthResponse;
-import Template.Api.DTO.LoginRequest;
-import Template.Api.DTO.RegisterRequest;
+import Template.Api.DTO.DTO_AuthResponse;
+import Template.Api.DTO.DTO_LoginRequest;
+import Template.Api.DTO.DTO_RegisterRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,12 +19,12 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping( "/Login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<DTO_AuthResponse> login(@RequestBody DTO_LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping( "/Register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<DTO_AuthResponse> register(@RequestBody DTO_RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 }

@@ -8,7 +8,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class RegisterRequest {
+public class DTO_RegisterRequest {
     String usuario;
     String contrasenia;
     String email;

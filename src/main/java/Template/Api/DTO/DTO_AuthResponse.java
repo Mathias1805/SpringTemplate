@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthResponse {
+public class DTO_AuthResponse {
     String token;
     List<Sesion> sesiones;
 }

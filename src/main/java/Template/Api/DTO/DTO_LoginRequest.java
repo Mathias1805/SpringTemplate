@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @Setter
 @Getter
-public class LoginRequest {
+public class DTO_LoginRequest {
     String versionapp;
     String nombreDispositivo;
     String sistemaOperativo;

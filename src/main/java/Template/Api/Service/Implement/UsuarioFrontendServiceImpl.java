@@ -1,9 +1,9 @@
 package Template.Api.Service.Implement;
 
-import Template.Api.DTO.AuthResponse;
-import Template.Api.DTO.LoginRequest;
-import Template.Api.DTO.RegisterRequest;
-import Template.Api.DTO.UserCodeDTO;
+import Template.Api.DTO.DTO_AuthResponse;
+import Template.Api.DTO.DTO_LoginRequest;
+import Template.Api.DTO.DTO_RegisterRequest;
+import Template.Api.DTO.DTO_UserCode;
 import Template.Api.JWT.JWTservice;
 import Template.Api.Repository.UsuarioFrontendRepository;
 import Template.Api.Service.EmailService;
@@ -12,7 +12,6 @@ import Template.Api.Auth.AuthService;
 import Template.Api.UserFrontend.Usuariofrontend;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.util.*;
@@ -30,7 +29,7 @@ public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
     JWTservice jwTservice;
 
     @Override
-    public AuthResponse Login(LoginRequest loginRequest) {
+    public DTO_AuthResponse Login(DTO_LoginRequest loginRequest) {
         return authService.login(loginRequest);
     }
 
@@ -43,7 +42,7 @@ public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
     }
 
     @Override
-    public Map<String,Object> Register(RegisterRequest registerRequest) {
+    public Map<String,Object> Register(DTO_RegisterRequest registerRequest) {
 
         Usuariofrontend newFrontendUser = new Usuariofrontend();
         newFrontendUser.setUsuario(registerRequest.getUsuario());
@@ -76,7 +75,7 @@ public class UsuarioFrontendServiceImpl  implements UsuarioFrontendService {
         }
 
     @Override
-    public Map<String, Object> ValidateUser(UserCodeDTO userCode) {
+    public Map<String, Object> ValidateUser(DTO_UserCode userCode) {
         Optional<Usuariofrontend> Usuario = usuarioFrontendRepository.findByUsuarioAndCodver(userCode.getUser(), userCode.getCodver());
         if (Usuario.isEmpty()) {
             throw new RuntimeException("Usuario no encontrado o Código de verificacion incorrecto");

@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserCodeDTO {
-    private String codver;
-    private String user;
+public class DTO_UserFrontend {
+    String Usuario;
+    String Contrasenia;
 }

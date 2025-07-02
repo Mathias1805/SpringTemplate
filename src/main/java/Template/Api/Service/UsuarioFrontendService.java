@@ -1,15 +1,15 @@
 package Template.Api.Service;
 
-import Template.Api.DTO.AuthResponse;
-import Template.Api.DTO.LoginRequest;
-import Template.Api.DTO.RegisterRequest;
-import Template.Api.DTO.UserCodeDTO;
+import Template.Api.DTO.DTO_AuthResponse;
+import Template.Api.DTO.DTO_LoginRequest;
+import Template.Api.DTO.DTO_RegisterRequest;
+import Template.Api.DTO.DTO_UserCode;
 
 import java.util.Map;
 
 
 public interface UsuarioFrontendService {
-    AuthResponse Login(LoginRequest loginRequest);
-    Map<String,Object> Register(RegisterRequest registerRequest);
-    Map<String,Object>  ValidateUser(UserCodeDTO userCode);
+    DTO_AuthResponse Login(DTO_LoginRequest loginRequest);
+    Map<String,Object> Register(DTO_RegisterRequest registerRequest);
+    Map<String,Object>  ValidateUser(DTO_UserCode userCode);
 }
