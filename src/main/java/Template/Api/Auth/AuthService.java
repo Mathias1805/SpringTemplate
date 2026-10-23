@@ -1,14 +1,15 @@
 package Template.Api.Auth;
 
-
 import Template.Api.DTO.DTO_AuthResponse;
 import Template.Api.DTO.DTO_LoginRequest;
 import Template.Api.DTO.DTO_RegisterRequest;
 import Template.Api.DTO.DTO_UserFrontend;
+import Template.Api.Exception.InvalidTokenException;
+import Template.Api.Exception.UserInactiveException;
 import Template.Api.JWT.JWTservice;
 import Template.Api.Repository.DispositivoRepository;
-import Template.Api.Repository.SesionRepository;
 import Template.Api.Repository.UsuarioFrontendRepository;
+import Template.Api.Service.SesionService;
 import Template.Api.User.RolRepository;
 import Template.Api.User.UsuarioBackend;
 import Template.Api.User.UsuarioBackendRepository;
@@ -16,87 +17,143 @@ import Template.Api.UserFrontend.Dispositivo;
 import Template.Api.UserFrontend.Sesion;
 import Template.Api.UserFrontend.Usuariofrontend;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    @Autowired
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private final UsuarioBackendRepository usuarioBackendRepository;
-    @Autowired
     private final UsuarioFrontendRepository usuarioFrontendRepository;
-    @Autowired
     private final JWTservice jwTservice;
-    @Autowired
     private final PasswordEncoder passwordEncoder;
-    @Autowired
     private final AuthenticationManager authenticationManager;
-    @Autowired
     private final RolRepository rolRepository;
-    @Autowired
     private final DispositivoRepository dispositivoRepository;
-    @Autowired
-    private final SesionRepository sesionRepository;
+    private final SesionService sesionService;
 
+    // @Transactional en el método público para que Spring AOP pueda interceptarlo.
+    // Anotarlo en los métodos privados no tiene efecto (Spring usa proxies).
+    @Transactional
     public DTO_AuthResponse login(DTO_LoginRequest request) {
-
-        return switch (request.getTipousuario()){
-            case 1 -> procesarLoginClient(request);
-            case 2 -> procesarLoginFrontendUser(request);
-            default -> throw new IllegalStateException("Unexpected value: " + request.getTipousuario());
+        return switch (TipoUsuario.fromValor(request.getTipousuario())) {
+            case CLIENTE -> procesarLoginClient(request);
+            case USUARIO_FRONTEND -> procesarLoginFrontendUser(request);
         };
     }
 
     private DTO_AuthResponse procesarLoginClient(DTO_LoginRequest request) {
+        log.info("[AUTH] Intento login CLIENTE: usuario='{}', ip='{}'", request.getUsuario(), request.getIp());
+        try {
+            Dispositivo dispositivo = dispositivoRepository
+                    .findDispositivoByIpAndNombre(request.getIp(), request.getNombreDispositivo())
+                    .orElseGet(() -> {
+                        Dispositivo d = new Dispositivo();
+                        d.setNombre(request.getNombreDispositivo());
+                        d.setIp(request.getIp());
+                        d.setVersionapp(request.getVersionapp());
+                        d.setSistemaoperativo(request.getSistemaOperativo());
+                        d.setUbicacion(request.getUbicacion());
+                        d.setEstado(1);
+                        return dispositivoRepository.save(d);
+                    });
 
-        if(dispositivoRepository.findDispositivoByIpAndNombre(request.getIp(), request.getNombreDispositivo()).isEmpty()){
-            Dispositivo dispositivo = new Dispositivo();
-            dispositivo.setNombre(request.getNombreDispositivo());
-            dispositivo.setIp(request.getIp());
-            dispositivo.setVersionapp(request.getVersionapp());
-            dispositivo.setSistemaoperativo(request.getSistemaOperativo());
-            dispositivo.setUbicacion(request.getUbicacion());
-            dispositivo.setEstado(1);
-            Dispositivo dispositivoNuevo =dispositivoRepository.save(dispositivo);
+            List<Sesion> sesions = sesionService.obtenerSesionesPorIp(dispositivo.getIp());
+
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getContrasenia()));
+            UserDetails user = usuarioBackendRepository
+                    .findUsuarioBackendByUsuario(request.getUsuario()).orElseThrow();
+            String token = jwTservice.getToken(user);
+
+            log.info("[AUTH] Login exitoso CLIENTE: usuario='{}'", request.getUsuario());
+            return DTO_AuthResponse.builder()
+                    .token(token)
+                    .sesiones(sesions.isEmpty() ? null : sesions)
+                    .build();
+        } catch (Exception ex) {
+            log.warn("[AUTH] Login fallido CLIENTE: usuario='{}', ip='{}', razón='{}'",
+                    request.getUsuario(), request.getIp(), ex.getMessage());
+            throw ex;
         }
-        List<Sesion> sesions = sesionRepository.findSesionsByIddispositivo_Ip(request.getIp());
-
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getContrasenia()));
-        UserDetails user = usuarioBackendRepository.findUsuarioBackendByUsuario(request.getUsuario()).orElseThrow();
-        String token = jwTservice.getToken(user);
-
-        if (sesions.isEmpty()){
-            return DTO_AuthResponse.builder().token(token).build();
-        }
-        return DTO_AuthResponse.builder().token(token).sesiones(sesions).build();
     }
 
     private DTO_AuthResponse procesarLoginFrontendUser(DTO_LoginRequest request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getContrasenia()));
-        UserDetails user = usuarioBackendRepository.findUsuarioBackendByUsuario(request.getUsuario()).orElseThrow();
-        Optional<Usuariofrontend> usuarioFrontend = usuarioFrontendRepository.findByUsuarioAndContrasenia(request.getUsuariofrontend(),jwTservice.Cod(request.getContraseniafrontend()));
+        // Validación condicional: estos campos son obligatorios para tipousuario=2
+        // pero opcionales para tipousuario=1, por eso no están en el DTO con @NotBlank.
+        if (request.getUsuariofrontend() == null || request.getUsuariofrontend().isBlank()) {
+            throw new IllegalStateException("El campo usuariofrontend es obligatorio para login de usuario frontend");
+        }
+        if (request.getContraseniafrontend() == null || request.getContraseniafrontend().isBlank()) {
+            throw new IllegalStateException("El campo contraseniafrontend es obligatorio para login de usuario frontend");
+        }
 
-        if(usuarioFrontend.isEmpty()){
-            throw new InsufficientAuthenticationException("Usuario o Contraseña Incorrecta");
+        log.info("[AUTH] Intento login FRONTEND_USER: backend='{}', frontend='{}', ip='{}'",
+                request.getUsuario(), request.getUsuariofrontend(), request.getIp());
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getContrasenia()));
+            UserDetails user = usuarioBackendRepository
+                    .findUsuarioBackendByUsuario(request.getUsuario()).orElseThrow();
+
+            Optional<Usuariofrontend> usuarioFrontend = usuarioFrontendRepository
+                    .findByUsuarioAndContrasenia(request.getUsuariofrontend(),
+                            jwTservice.Cod(request.getContraseniafrontend()));
+
+            if (usuarioFrontend.isEmpty()) {
+                throw new InsufficientAuthenticationException("Usuario o contraseña incorrecta");
+            }
+            if (usuarioFrontend.get().getActivo() == 0) {
+                throw new UserInactiveException(request.getUsuariofrontend());
+            }
+
+            Dispositivo dispositivo = dispositivoRepository
+                    .findDispositivoByIpAndNombre(request.getIp(), request.getNombreDispositivo())
+                    .orElseGet(() -> {
+                        Dispositivo d = new Dispositivo();
+                        d.setNombre(request.getNombreDispositivo());
+                        d.setIp(request.getIp());
+                        d.setVersionapp(request.getVersionapp());
+                        d.setSistemaoperativo(request.getSistemaOperativo());
+                        d.setUbicacion(request.getUbicacion());
+                        d.setEstado(1);
+                        return dispositivoRepository.save(d);
+                    });
+
+            Sesion sesion = sesionService.crearSesion(usuarioFrontend.get(), dispositivo, null);
+
+            DTO_UserFrontend userDto = new DTO_UserFrontend();
+            userDto.setUsuario(usuarioFrontend.get().getUsuario());
+            userDto.setContrasenia(usuarioFrontend.get().getContrasenia());
+            String token = jwTservice.getToken(user, userDto);
+
+            log.info("[AUTH] Login exitoso FRONTEND_USER: backend='{}', frontend='{}'",
+                    request.getUsuario(), request.getUsuariofrontend());
+            return DTO_AuthResponse.builder()
+                    .token(token)
+                    .sesiones(List.of(sesion))
+                    .build();
+        } catch (Exception ex) {
+            log.warn("[AUTH] Login fallido FRONTEND_USER: backend='{}', frontend='{}', razón='{}'",
+                    request.getUsuario(), request.getUsuariofrontend(), ex.getMessage());
+            throw ex;
         }
-        if (usuarioFrontend.get().getActivo() == 0){
-            throw new RuntimeException("Usuario no activo");
-        }
-        DTO_UserFrontend UserDto = new DTO_UserFrontend();
-        UserDto.setUsuario(usuarioFrontend.get().getUsuario());
-        UserDto.setContrasenia(usuarioFrontend.get().getContrasenia());
-        String token = jwTservice.getToken(user,UserDto);
-        return DTO_AuthResponse.builder().token(token).build();
     }
 
+    @Transactional
     public DTO_AuthResponse register(DTO_RegisterRequest request) {
         UsuarioBackend user = UsuarioBackend.builder()
                 .usuario(request.getUsuario())
@@ -104,6 +161,17 @@ public class AuthService {
                 .rol(rolRepository.findByRolLike(request.getRol()).orElseThrow())
                 .build();
         usuarioBackendRepository.save(user);
+        log.info("[AUTH] Usuario backend registrado: '{}'", request.getUsuario());
         return DTO_AuthResponse.builder().token(jwTservice.getToken(user)).build();
+    }
+
+    public String refreshToken(String token) {
+        String usuario = jwTservice.getUsuarioFromToken(token);
+        UserDetails userDetails = usuarioBackendRepository
+                .findUsuarioBackendByUsuario(usuario).orElseThrow();
+        if (!jwTservice.isTokenValid(token, userDetails)) {
+            throw new InvalidTokenException();
+        }
+        return jwTservice.refreshToken(token, userDetails);
     }
 }

@@ -1,6 +1,5 @@
 package Template.Api.Config;
 
-
 import Template.Api.JWT.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationProvider authenticationProvider;
 
@@ -27,33 +27,38 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.applyPermitDefaultValues();
-                    config.addAllowedHeader("**");
-                    config.addAllowedOriginPattern("**");
+                    config.addAllowedHeader("*");
+                    // DEVELOPMENT: CORS abierto a todos los orígenes.
+                    // En producción reemplazar con dominios explícitos:
+                    //   config.addAllowedOrigin("https://tu-frontend.com");
+                    config.addAllowedOriginPattern("*");
                     config.addAllowedMethod(HttpMethod.GET);
                     config.addAllowedMethod(HttpMethod.POST);
                     config.addAllowedMethod(HttpMethod.PUT);
                     config.addAllowedMethod(HttpMethod.DELETE);
-                    config.addAllowedOrigin("**");
-                    config.setAllowCredentials(true);
-                    // Configura otros elementos según tus necesidades
                     return config;
                 }))
-                .csrf(csrf ->
-                        csrf
-                                .disable())
-                .authorizeHttpRequests(authRequest ->
-                        authRequest
-                                .requestMatchers("/error").permitAll()
-                                .requestMatchers("/Auth/Login").permitAll()
-                                .requestMatchers("/Auth/Register").hasAuthority("ADMIN")
-                                .anyRequest().authenticated()
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authRequest -> authRequest
+                        // Públicos — sin autenticación
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/Auth/Login").permitAll()
+                        .requestMatchers("/Usuario/Login").permitAll()
+                        .requestMatchers("/Usuario/Register").permitAll()
+                        .requestMatchers("/Usuario/Validate").permitAll()
+                        .requestMatchers("/Usuario/ResetPassword").permitAll()
+                        .requestMatchers("/Usuario/ConfirmReset").permitAll()
+                        // Swagger UI / OpenAPI
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
+                        // Requiere rol ADMIN
+                        .requestMatchers("/Auth/Register").hasAuthority("ADMIN")
+                        // Todo lo demás requiere autenticación
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManager ->
-                        sessionManager
-                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        sessionManager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
-
 }
